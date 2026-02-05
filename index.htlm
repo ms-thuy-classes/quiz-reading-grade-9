@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Reading - Ms. Thúy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --p-brown-1: #F5EBE0;
+            --p-brown-2: #E3D5CA;
+            --p-brown-4: #AD8B73;
+            --p-brown-dark: #634832;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: url('https://wallpapers-clan.com/wp-content/uploads/2025/01/cute-capybaras-napping-in-nature-desktop-wallpaper-preview.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.1); 
+            z-index: 0;
+        }
+
+        #quiz-app {
+            background: rgba(255, 255, 255, 0.45); 
+            backdrop-filter: blur(3px);
+            width: 95%;
+            max-width: 700px;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        #progress-wrapper {
+            width: 100%;
+            height: 14px;
+            background: rgba(99, 72, 50, 0.4);
+            border-radius: 10px;
+            margin: 50px 0 20px;
+            position: relative;
+        }
+
+        #capy-runner {
+            position: absolute;
+            bottom: -12px; 
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            transition: left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+        }
+
+        #timer-bar {
+            height: 8px;
+            background: #c0392b;
+            width: 100%;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            transition: width 1s linear;
+        }
+
+        #question-text {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            color: #1a0f00;
+            min-height: 80px;
+            margin-bottom: 25px;
+            font-weight: 700;
+            text-align: left;
+            padding: 0 15px;
+            text-shadow: 1px 1px 1px rgba(255,255,255,0.8);
+        }
+
+        .options-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .opt-btn {
+            background: rgba(255, 255, 255, 0.7);
+            border: 2px solid var(--p-brown-dark);
+            padding: 16px;
+            border-radius: 18px;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.3s;
+            font-weight: 700;
+            color: var(--p-brown-dark);
+        }
+
+        .opt-btn:hover {
+            background: var(--p-brown-dark);
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .hidden { display: none; }
+        
+        button#start-btn {
+            background: var(--p-brown-dark);
+            color: white; border: none; padding: 18px 50px;
+            border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 1.2rem;
+        }
+
+        #feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            display: none;
+        }
+
+        #feedback img { width: 200px; border-radius: 50%; border: 5px solid white; }
+    </style>
+</head>
+<body>
+
+<audio id="sound-correct" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+<audio id="sound-wrong" src="https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3"></audio>
+
+<div id="quiz-app">
+    <div id="screen-intro">
+        <h1 style="color: var(--p-brown-dark); margin-bottom: 5px;">QUIZ READING</h1>
+        <p style="font-weight: bold; color: #444;">Tạo bởi: Ms. Thúy</p>
+        <img src="https://i.pinimg.com/736x/84/82/26/848226f940b663ebebd72ae950e421f5.jpg" width="100" style="border-radius: 50%; margin: 15px 0;">
+        <p style="font-weight: 600; color: #2c1e14;">Thử thách 30 câu hỏi trình độ B2</p>
+        <input type="text" id="user-name" placeholder="Nhập tên của em..." style="padding:15px; border-radius:15px; border:2px solid var(--p-brown-dark); width:80%; margin-bottom:25px; outline:none; text-align: center; font-weight: bold;">
+        <br>
+        <button id="start-btn" onclick="initQuiz()">Bắt đầu học thôi!</button>
+    </div>
+
+    <div id="screen-quiz" class="hidden">
+        <div id="timer-bar"></div>
+        <div id="progress-wrapper">
+            <img id="capy-runner" src="https://hoichimtroi.com/wp-content/uploads/2025/10/capybara-chibi-2.jpg">
+        </div>
+        <div id="q-info" style="font-weight: 800; color: #1a0f00; margin-bottom: 10px;"></div>
+        <div id="question-text"></div>
+        <div class="options-list" id="options-box"></div>
+    </div>
+
+    <div id="screen-result" class="hidden">
+        <h2 style="font-size: 2.2rem; color: var(--p-brown-dark);">Tuyệt vời!</h2>
+        <p id="score-summary" style="font-size: 1.8rem; color: #c0392b; font-weight: 800;"></p>
+        <button id="start-btn" onclick="location.reload()">Làm lại bài nhé</button>
+    </div>
+
+    <div id="feedback">
+        <img id="feedback-img" src="">
+    </div>
+</div>
+
+<script>
+    const b2Questions = [
+        { q: "The garden is ________ by a tall wooden fence.", options: ["provided", "enclosed", "surround", "immersed"], a: 1 },
+        { q: "The hotel ________ clean towels for all guests every morning.", options: ["offering", "discovers", "explores", "provides"], a: 3 },
+        { q: "After the war, the people finally enjoyed a long period of ________.", options: ["peace", "spot", "significance", "delicacy"], a: 0 },
+        { q: "We went ________ in the clear blue water to see the coral reefs.", options: ["exploring", "snorkeling", "immersing", "surrounding"], a: 1 },
+        { q: "The ________ ruled the land with kindness for over forty years.", options: ["landmark", "stall", "emperor", "citadel"], a: 2 },
+        { q: "People go to the ________ to pray and find quiet time.", options: ["moat", "souvenir", "pagoda", "temple"], a: 3 },
+        { q: "This tall building is a famous ________ that helps people find their way.", options: ["landmark", "site", "stall", "citadel"], a: 0 },
+        { q: "Christopher Columbus wanted to ________ a shorter route to India.", options: ["provide", "immerse", "discover", "enclose"], a: 2 },
+        { q: "The ________ of the historical document was not understood for years.", options: ["delicacy", "significance", "peace", "souvenir"], a: 1 },
+        { q: "The castle was protected by a deep ________ filled with water.", options: ["citadel", "stall", "site", "moat"], a: 3 },
+        { q: "We found a quiet ________ in the park to have our picnic.", options: ["spot", "landmark", "emperor", "moat"], a: 0 },
+        { q: "Hue is known for its beautiful ancient ________.", options: ["stall", "moat", "citadel", "landmark"], a: 2 },
+        { q: "You cannot enter the museum ________ a valid ticket.", options: ["enclosed", "without", "ancient", "provided"], a: 1 },
+        { q: "Spring rolls are considered a local ________ in this city.", options: ["souvenir", "significance", "stall", "delicacy"], a: 3 },
+        { q: "To learn English well, you should ________ yourself in the language.", options: ["surround", "discover", "immerse", "provide"], a: 2 },
+        { q: "The fear of spiders is ________ in some people's childhood memories.", options: ["ancient", "enclosed", "deep-rooted", "immersed"], a: 2 },
+        { q: "I bought a small keychain as a ________ of my trip to Paris.", options: ["souvenir", "delicacy", "landmark", "stall"], a: 0 },
+        { q: "There are many food ________ at the night market selling snacks.", options: ["citadels", "temples", "moats", "stalls"], a: 3 },
+        { q: "They found ________ ruins buried deep under the modern city.", options: ["deep-rooted", "ancient", "enclosed", "provided"], a: 1 },
+        { q: "The castle walls ________ the entire village to keep it safe.", options: ["provide", "surround", "discover", "immerse"], a: 1 },
+        { q: "A ________ is a religious building, often very beautiful and old.", options: ["stall", "moat", "pagoda", "emperor"], a: 2 },
+        { q: "The historical ________ of this site makes it very popular with tourists.", options: ["delicacy", "spot", "significance", "peace"], a: 2 },
+        { q: "We visited the ________ where the famous battle took place.", options: ["site", "stall", "emperor", "moat"], a: 0 },
+        { q: "It's a beautiful ________ for watching the sunset over the lake.", options: ["citadel", "landmark", "spot", "stall"], a: 2 },
+        { q: "The ________ was once the home of the royal family.", options: ["stall", "citadel", "moat", "souvenir"], a: 1 },
+        { q: "They want to ________ the world and learn about new cultures.", options: ["provide", "explore", "enclose", "immerse"], a: 1 },
+        { q: "The ________ of the old town are protected by law.", options: ["stalls", "moats", "delicacies", "landmarks"], a: 3 },
+        { q: "This tradition is ________ in our culture for centuries.", options: ["ancient", "enclosed", "immersed", "deep-rooted"], a: 3 },
+        { q: "They found an ________ city hidden in the jungle.", options: ["provided", "ancient", "enclosed", "without"], a: 1 },
+        { q: "The town is ________ by beautiful mountains and forests.", options: ["provided", "discovered", "surrounded", "immersers"], a: 2 }
+    ];
+
+    let questions = [];
+    let currentIdx = 0;
+    let score = 0;
+    let timer;
+    let timeLeft = 20;
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function initQuiz() {
+        const name = document.getElementById('user-name').value.trim();
+        if(!name) { alert("Vui lòng nhập tên em nhé!"); return; }
+        questions = shuffleArray([...b2Questions]);
+        document.getElementById('screen-intro').classList.add('hidden');
+        document.getElementById('screen-quiz').classList.remove('hidden');
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if(currentIdx >= questions.length) return endQuiz();
+        timeLeft = 20;
+        updateTimerUI();
+        const q = questions[currentIdx];
+        document.getElementById('q-info').innerText = `CÂU ${currentIdx + 1} / 30`;
+        document.getElementById('question-text').innerText = q.q;
+        const btnBox = document.getElementById('options-box');
+        btnBox.innerHTML = '';
+        q.options.forEach((opt, i) => {
+            const b = document.createElement('div');
+            b.className = 'opt-btn';
+            b.innerHTML = `<strong>${String.fromCharCode(65+i)}.</strong> ${opt}`;
+            b.onclick = () => check(i);
+            btnBox.appendChild(b);
+        });
+        const progress = (currentIdx / questions.length) * 100;
+        document.getElementById('capy-runner').style.left = `calc(${progress}% - 20px)`;
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(() => {
+            timeLeft--;
+            updateTimerUI();
+            if(timeLeft <= 0) { clearInterval(timer); check(-1); }
+        }, 1000);
+    }
+
+    function updateTimerUI() {
+        document.getElementById('timer-bar').style.width = (timeLeft / 20) * 100 + "%";
+    }
+
+    function check(idx) {
+        clearInterval(timer);
+        const isCorrect = (idx === questions[currentIdx].a);
+        const fb = document.getElementById('feedback');
+        const fbImg = document.getElementById('feedback-img');
+        
+        if(isCorrect) {
+            score++;
+            document.getElementById('sound-correct').play();
+            fbImg.src = "https://i.pinimg.com/736x/06/c5/e7/06c5e7c99e6ad30299fed0807f73deb0.jpg";
+        } else {
+            document.getElementById('sound-wrong').play();
+            fbImg.src = "https://static.vecteezy.com/system/resources/previews/048/942/114/non_2x/cute-capybara-crying-cartoon-illustration-vector.jpg";
+        }
+        
+        fb.style.display = 'block';
+        setTimeout(() => {
+            fb.style.display = 'none';
+            currentIdx++;
+            loadQuestion();
+        }, 1200);
+    }
+
+    function endQuiz() {
+        document.getElementById('screen-quiz').classList.add('hidden');
+        document.getElementById('screen-result').classList.remove('hidden');
+        const name = document.getElementById('user-name').value;
+        document.getElementById('score-summary').innerText = `${name}: ${score} / 30 ĐIỂM`;
+    }
+</script>
+</body>
+</html>
